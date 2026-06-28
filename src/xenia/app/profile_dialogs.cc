@@ -354,6 +354,7 @@ void ProfileConfigDialog::OnDraw(ImGuiIO& io) {
           ImGui::Separator();
 
           if (account.IsLiveEnabled()) {
+            ImGui::BeginDisabled(!is_signedin);
             if (ImGui::BeginMenu("Convert to Offline Profile")) {
               ImGui::BeginTooltip();
               ImGui::TextUnformatted(
@@ -367,13 +368,16 @@ void ProfileConfigDialog::OnDraw(ImGuiIO& io) {
               if (ImGui::MenuItem("Yes, convert it!")) {
                 profile_manager->ConvertToOfflineProfile(xuid);
                 ImGui::EndMenu();
+                ImGui::EndDisabled();
                 ImGui::EndPopup();
                 return false;
               }
 
               ImGui::EndMenu();
             }
+            ImGui::EndDisabled();
           } else {
+            ImGui::BeginDisabled(!is_signedin);
             if (ImGui::BeginMenu("Convert to Xbox Live-Enabled Profile")) {
               ImGui::BeginTooltip();
               ImGui::TextUnformatted(
@@ -387,12 +391,14 @@ void ProfileConfigDialog::OnDraw(ImGuiIO& io) {
               if (ImGui::MenuItem("Yes, convert it!")) {
                 profile_manager->ConvertToXboxLiveEnabledProfile(xuid);
                 ImGui::EndMenu();
+                ImGui::EndDisabled();
                 ImGui::EndPopup();
                 return false;
               }
 
               ImGui::EndMenu();
             }
+            ImGui::EndDisabled();
           }
 
           if (ImGui::BeginMenu("Delete Profile")) {
