@@ -1014,10 +1014,6 @@ bool xeDrawFriendContent(xe::ui::ImGuiDrawer* imgui_drawer,
                          std::shared_ptr<xe::ui::ImmediateTexture> icon_texture,
                          FriendPresenceObjectJSON& presence,
                          uint64_t* selected_xuid_, uint64_t* removed_xuid_) {
-  const uint32_t user_index =
-      kernel_state()->xam_state()->GetUserIndexAssignedToProfileFromXUID(
-          profile->GetLogonXUID());
-
   if (icon_texture) {
     ImGui::Image(reinterpret_cast<ImTextureID>(icon_texture.get()),
                  xe::ui::default_image_icon_size);
@@ -1121,6 +1117,10 @@ bool xeDrawFriendContent(xe::ui::ImGuiDrawer* imgui_drawer,
 
       profile->SetSelfInvite(invite);
 
+      const uint32_t user_index =
+          kernel_state()->xam_state()->GetUserIndexAssignedToProfileFromXUID(
+              profile->xuid());
+
       kernel_state()->BroadcastNotification(kXNotificationLiveInviteAccepted,
                                             user_index);
     }
@@ -1147,10 +1147,6 @@ bool xeDrawFriendContent(xe::ui::ImGuiDrawer* imgui_drawer,
           *removed_xuid_ = friend_xuid;
         }
 
-        RemoveFriendFromConfig(friend_xuid);
-        kernel_state()->BroadcastNotification(
-            kXNotificationFriendsFriendRemoved, user_index);
-
         std::string description =
             !presence.Gamertag().empty() ? presence.Gamertag() : "Success";
 
@@ -1173,13 +1169,6 @@ bool xeDrawFriendContent(xe::ui::ImGuiDrawer* imgui_drawer,
     if (ImGui::Button(add_label.c_str(), half_width_btn)) {
       bool added = kernel_state()->friends_manager()->AddFriend(profile->xuid(),
                                                                 friend_xuid);
-
-      if (added) {
-        AddFriendToConfig(friend_xuid);
-
-        kernel_state()->BroadcastNotification(kXNotificationFriendsFriendAdded,
-                                              user_index);
-      }
 
       std::string description =
           !presence.Gamertag().empty() ? presence.Gamertag() : "Success";
@@ -1275,10 +1264,6 @@ bool xeDrawAddFriend(xe::ui::ImGuiDrawer* imgui_drawer, UserProfile* profile,
     ImGui::SetWindowFontScale(1.05f);
 
     ImVec2 btn_size = ImVec2(ImGui::GetContentRegionAvail().x, btn_height);
-
-    uint32_t user_index =
-        kernel_state()->xam_state()->GetUserIndexAssignedToProfileFromXUID(
-            profile->GetLogonXUID());
 
     bool max_friends = kernel_state()->friends_manager()->GetFriendsCount(
                            profile->xuid()) >= X_ONLINE_MAX_FRIENDS;
@@ -1382,20 +1367,12 @@ bool xeDrawAddFriend(xe::ui::ImGuiDrawer* imgui_drawer, UserProfile* profile,
 
     ImGui::BeginDisabled(!args.valid_xuid || args.are_friends || max_friends);
     if (ImGui::Button("Add", btn_size)) {
-      bool added =
+      args.added_friend =
           kernel_state()->friends_manager()->AddFriend(profile->xuid(), xuid);
-
-      if (added) {
-        AddFriendToConfig(xuid);
-        args.added_friend = true;
-
-        kernel_state()->BroadcastNotification(kXNotificationFriendsFriendAdded,
-                                              user_index);
-      }
 
       std::string desc = xuid_string;
 
-      if (!added) {
+      if (!args.added_friend) {
         desc = "Failed!";
       }
 
@@ -1425,10 +1402,6 @@ bool xeDrawFriendsContent(
   if (!profile || !presences) {
     return false;
   }
-
-  uint32_t user_index =
-      kernel_state()->xam_state()->GetUserIndexAssignedToProfileFromXUID(
-          profile->GetLogonXUID());
 
   ImGuiViewport* viewport = ImGui::GetMainViewport();
   ImVec2 center = viewport->GetCenter();
@@ -1636,9 +1609,6 @@ bool xeDrawFriendsContent(
         kernel_state()->friends_manager()->ClearFriends(profile->xuid());
 
         args.refresh_presence = true;
-
-        kernel_state()->BroadcastNotification(
-            kXNotificationFriendsFriendRemoved, user_index);
 
         kernel_state()
             ->emulator()
